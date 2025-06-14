@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { MessageCircle, Target, TrendingUp, ChevronLeft, Copy, RefreshCw } from 'lucide-react';
 import { UserProfile, CoachingQuestion, RIASECScore } from '../types';
+import { coachingQuestions } from '../data/coachingQuestions';
 
 interface CoachingDashboardProps {
   userProfile: UserProfile;
-  coachingQuestions: CoachingQuestion[];
-  onBack: () => void;
+  onBack?: () => void;
   onRestart: () => void;
 }
 
 export const CoachingDashboard: React.FC<CoachingDashboardProps> = ({
   userProfile,
-  coachingQuestions,
   onBack,
   onRestart
 }) => {
@@ -91,14 +90,18 @@ export const CoachingDashboard: React.FC<CoachingDashboardProps> = ({
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">Key Work Values</h3>
                 <div className="flex flex-wrap gap-2">
-                  {userProfile.workValues.slice(0, 4).map((value) => (
-                    <span
-                      key={value}
-                      className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                    >
-                      {value}
-                    </span>
-                  ))}
+                  {userProfile.workValues && userProfile.workValues.length > 0 ? (
+                    userProfile.workValues.slice(0, 4).map((value) => (
+                      <span
+                        key={value}
+                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+                      >
+                        {value}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500">No work values selected</span>
+                  )}
                 </div>
               </div>
             </div>

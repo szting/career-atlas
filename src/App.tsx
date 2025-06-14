@@ -11,6 +11,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { GameState, PersonaType, UserProfile, CareerPath } from './types';
 import { calculateCareerMatches } from './utils/careerMatcher';
 import { Settings } from 'lucide-react';
+import { coachingQuestions } from './data/coachingQuestions';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -30,7 +31,7 @@ function App() {
       completedAssessments: []
     },
     recommendedCareers: [],
-    coachingQuestions: [],
+    coachingQuestions: coachingQuestions,
     reflectionQuestions: [],
     gameProgress: 0
   });
@@ -131,10 +132,17 @@ function App() {
         completedAssessments: []
       },
       recommendedCareers: [],
-      coachingQuestions: [],
+      coachingQuestions: coachingQuestions,
       reflectionQuestions: [],
       gameProgress: 0
     });
+  };
+
+  const handleBackToResults = () => {
+    setGameState(prev => ({
+      ...prev,
+      currentStep: 'results'
+    }));
   };
 
   const renderCurrentStep = () => {
@@ -168,6 +176,7 @@ function App() {
         return (
           <CoachingDashboard 
             userProfile={gameState.userProfile}
+            onBack={handleBackToResults}
             onRestart={handleRestart}
           />
         );
