@@ -1,44 +1,68 @@
 import streamlit as st
 
 def render():
-    st.title(f"Welcome, {st.session_state.user_profile['name'] or 'Explorer'}! 👋")
+    st.title("🎯 Welcome to Your Career Journey!")
     
     st.markdown("""
-    ### 🎯 Your Career Discovery Journey Begins Here
+    ### Discover Your Ideal Career Path
     
-    This comprehensive assessment will help you:
-    - **Discover** your personality type through the RIASEC model
-    - **Evaluate** your skills and confidence levels
-    - **Identify** your core work values
-    - **Match** with careers that align with your profile
-    - **Receive** personalized coaching and development guidance
+    This comprehensive assessment will help you understand:
     
-    ### 📋 Assessment Overview
+    - **Your Personality Type** (RIASEC Model)
+    - **Your Skills & Strengths**
+    - **Your Work Values & Preferences**
     
-    1. **RIASEC Assessment** (5 minutes)
-       - Explore your interests across 6 personality dimensions
-    
-    2. **Skills Confidence** (3 minutes)
-       - Rate your confidence in key professional skills
-    
-    3. **Work Values** (2 minutes)
-       - Identify what matters most to you in your career
-    
-    4. **Results & Recommendations**
-       - Get personalized career matches and coaching insights
+    The assessment takes approximately 15-20 minutes to complete.
     """)
     
-    # Name input
-    st.divider()
-    name = st.text_input("First, what's your name?", value=st.session_state.user_profile['name'])
-    
-    if name:
-        st.session_state.user_profile['name'] = name
+    # User information form
+    with st.form("user_info"):
+        col1, col2 = st.columns(2)
         
-        col1, col2, col3 = st.columns([1, 2, 1])
+        with col1:
+            name = st.text_input("Your Name", value=st.session_state.get('user_name', ''))
+        
         with col2:
-            if st.button("🚀 Start Assessment", type="primary", use_container_width=True):
+            email = st.text_input("Your Email", value=st.session_state.get('user_email', ''))
+        
+        submitted = st.form_submit_button("Start Assessment")
+        
+        if submitted:
+            if name and email:
+                st.session_state.user_name = name
+                st.session_state.user_email = email
                 st.session_state.current_step = 'riasec'
+                st.session_state.game_progress = 10
                 st.rerun()
-    else:
-        st.info("Please enter your name to begin the assessment.")
+            else:
+                st.error("Please enter both your name and email to continue.")
+    
+    # Assessment overview
+    st.markdown("---")
+    st.subheader("What to Expect")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="assessment-card">
+            <h4>1. RIASEC Assessment</h4>
+            <p>Discover your personality type through Holland's career interest model.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="assessment-card">
+            <h4>2. Skills Evaluation</h4>
+            <p>Rate your confidence in various professional skills.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="assessment-card">
+            <h4>3. Values Assessment</h4>
+            <p>Identify what matters most to you in your work environment.</p>
+        </div>
+        """, unsafe_allow_html=True)

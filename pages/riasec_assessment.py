@@ -1,83 +1,53 @@
 import streamlit as st
-from data.questions import riasec_questions
-from utils.session_state import update_progress
+from data.riasec_questions import riasec_questions
 
 def render():
-    st.title("🔍 RIASEC Personality Assessment")
-    st.markdown("Rate how much you agree with each statement on a scale of 1-5")
+    st.title("🎯 RIASEC Personality Assessment")
+    st.markdown("Rate how much you agree with each statement on a scale of 1-5.")
     
-    # Progress bar
-    progress = len(st.session_state.riasec_responses) / len(riasec_questions)
-    st.progress(progress)
-    st.caption(f"Question {len(st.session_state.riasec_responses) + 1} of {len(riasec_questions)}")
+    # Progress
+    progress = 10 + (30 * st.session_state.get('riasec_progress', 0) / 100)
+    st.session_state.game_progress = progress
     
-    # Group questions by type
-    question_groups = {}
-    for q in riasec_questions:
-        if q['type'] not in question_groups:
-            question_groups[q['type']] = []
-        question_groups[q['type']].append(q)
+    # Questions (simplified for now)
+    if 'riasec_answers' not in st.session_state:
+        st.session_state.riasec_answers = {}
     
-    # Display questions by type
-    for q_type, questions in question_groups.items():
-        st.subheader(f"{q_type.capitalize()} Interests")
+    # Display a subset of questions for demo
+    demo_questions = [
+        {"id": "r1", "text": "I enjoy working with tools and machines", "type": "realistic"},
+        {"id": "i1", "text": "I like to solve complex problems", "type": "investigative"},
+        {"id": "a1", "text": "I enjoy creative activities like art, drama, or music", "type": "artistic"},
+        {"id": "s1", "text": "I like helping and teaching others", "type": "social"},
+        {"id": "e1", "text": "I enjoy leading and persuading people", "type": "enterprising"},
+        {"id": "c1", "text": "I prefer working with data and details", "type": "conventional"}
+    ]
+    
+    for i, question in enumerate(demo_questions):
+        st.markdown(f"**{i+1}. {question['text']}**")
+        rating = st.slider(
+            "Rate your agreement",
+            1, 5, 
+            value=st.session_state.riasec_answers.get(question['id'], 3),
+            key=f"riasec_{question['id']}"
+        )
+        st.session_state.riasec_answers[question['id']] = rating
         
-        for question in questions:
-            col1, col2 = st.columns([3, 2])
-            
-            with col1:
-                st.markdown(f"**{question['question']}**")
-            
-            with col2:
-                response = st.radio(
-                    "Rate:",
-                    options=[1, 2, 3, 4, 5],
-                    horizontal=True,
-                    key=f"riasec_{question['id']}",
-                    index=st.session_state.riasec_responses.get(question['id'], 3) - 1,
-                    label_visibility="collapsed"
-                )
-                st.session_state.riasec_responses[question['id']] = response
+        # Update scores
+        if question['type'] in st.session_state.riasec_scores:
+            st.session_state.riasec_scores[question['type']] = rating
     
-    # Navigation
-    st.divider()
-    col1, col2 = st.columns(2)
+    st.markdown("---")
+    
+    col1, col2 = st.columns([1, 1])
     
     with col1:
-        if st.button("← Back", use_container_width=True):
+        if st.button("← Back", key="back_riasec"):
             st.session_state.current_step = 'welcome'
             st.rerun()
     
     with col2:
-        if st.button("Next →", type="primary", use_container_width=True):
-            # Calculate RIASEC scores
-            calculate_riasec_scores()
-            st.session_state.user_profile['completed_assessments'].append('riasec')
-            update_progress()
+        if st.button("Next →", key="next_riasec"):
             st.session_state.current_step = 'skills'
+            st.session_state.game_progress = 40
             st.rerun()
-
-def calculate_riasec_scores():
-    """Calculate RIASEC scores from responses"""
-    type_scores = {
-        'realistic': [],
-        'investigative': [],
-        'artistic': [],
-        'social': [],
-        'enterprising': [],
-        'conventional': []
-    }
-    
-    # Group responses by type
-    for q in riasec_questions:
-        if q['id'] in st.session_state.riasec_responses:
-            score = st.session_state.riasec_responses[q['id']]
-            type_scores[q['type']].append(score)
-    
-    # Calculate average scores
-    for riasec_type, scores in type_scores.items():
-        if scores:
-            avg_score = sum(scores) / len(scores)
-            # Convert to percentage (1-5 scale to 0-100)
-            percentage = ((avg_score - 1) / 4) * 100
-            st.session_state.user_profile['riasec_scores'][riasec_type] = round(percentage)

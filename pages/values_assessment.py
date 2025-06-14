@@ -1,71 +1,64 @@
 import streamlit as st
-from data.questions import work_values
-from utils.session_state import update_progress
 
 def render():
     st.title("💎 Work Values Assessment")
-    st.markdown("Select the values that are most important to you in your career")
+    st.markdown("Select your top 5 most important work values.")
     
     # Progress
-    st.progress(0.75)
-    st.caption("Step 3 of 3")
+    st.session_state.game_progress = 80
     
-    # Values selection
-    st.subheader("What matters most to you at work?")
-    st.info("Select up to 5 values that are most important to you")
+    work_values_list = [
+        {'name': 'Work-Life Balance', 'description': 'Maintaining harmony between work and personal life'},
+        {'name': 'Career Growth', 'description': 'Opportunities for advancement and skill development'},
+        {'name': 'Job Security', 'description': 'Stable employment and financial security'},
+        {'name': 'Creative Freedom', 'description': 'Ability to express creativity and innovation'},
+        {'name': 'Social Impact', 'description': 'Making a positive difference in society'},
+        {'name': 'Team Collaboration', 'description': 'Working closely with others'},
+        {'name': 'Independence', 'description': 'Autonomy and self-direction in work'},
+        {'name': 'Recognition', 'description': 'Being acknowledged for contributions'},
+        {'name': 'Competitive Salary', 'description': 'High financial compensation'},
+        {'name': 'Learning Opportunities', 'description': 'Continuous learning and development'}
+    ]
     
-    # Create three columns for values
-    col1, col2, col3 = st.columns(3)
+    if 'work_values' not in st.session_state:
+        st.session_state.work_values = []
     
-    selected_values = st.session_state.user_profile['work_values']
+    st.info(f"Selected: {len(st.session_state.work_values)}/5 values")
     
-    for i, value in enumerate(work_values):
-        col = [col1, col2, col3][i % 3]
+    for value in work_values_list:
+        col1, col2 = st.columns([3, 1])
         
-        with col:
-            is_selected = value in selected_values
-            
-            if st.checkbox(value, value=is_selected, key=f"value_{value}"):
-                if value not in selected_values and len(selected_values) < 5:
-                    selected_values.append(value)
+        with col1:
+            st.markdown(f"**{value['name']}**")
+            st.caption(value['description'])
+        
+        with col2:
+            is_selected = value['name'] in st.session_state.work_values
+            if st.checkbox("Select", key=f"value_{value['name']}", value=is_selected):
+                if value['name'] not in st.session_state.work_values:
+                    if len(st.session_state.work_values) < 5:
+                        st.session_state.work_values.append(value['name'])
+                    else:
+                        st.warning("You can only select 5 values. Deselect one to choose another.")
+                        st.rerun()
             else:
-                if value in selected_values:
-                    selected_values.remove(value)
+                if value['name'] in st.session_state.work_values:
+                    st.session_state.work_values.remove(value['name'])
     
-    st.session_state.user_profile['work_values'] = selected_values
+    st.markdown("---")
     
-    # Show selected count
-    if len(selected_values) > 5:
-        st.error(f"Please select only up to 5 values. Currently selected: {len(selected_values)}")
-    else:
-        st.success(f"Selected: {len(selected_values)}/5 values")
-    
-    # Navigation
-    st.divider()
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1, 1])
     
     with col1:
-        if st.button("← Back", use_container_width=True):
+        if st.button("← Back", key="back_values"):
             st.session_state.current_step = 'skills'
             st.rerun()
     
     with col2:
-        if st.button("Complete Assessment →", 
-                    type="primary", 
-                    use_container_width=True,
-                    disabled=len(selected_values) == 0 or len(selected_values) > 5):
-            st.session_state.user_profile['completed_assessments'].append('values')
-            update_progress()
-            
-            # Calculate career matches
-            from utils.career_matcher import calculate_career_matches
-            st.session_state.recommended_careers = calculate_career_matches(st.session_state.user_profile)
-            
-            # Generate coaching questions
-            from utils.openai_service import OpenAIService
-            openai_service = OpenAIService()
-            st.session_state.coaching_questions = openai_service.generate_coaching_questions(st.session_state.user_profile)
-            st.session_state.reflection_questions = openai_service.generate_reflection_questions(st.session_state.user_profile)
-            
-            st.session_state.current_step = 'results'
-            st.rerun()
+        if len(st.session_state.work_values) == 5:
+            if st.button("View Results →", key="view_results"):
+                st.session_state.current_step = 'results'
+                st.session_state.game_progress = 100
+                st.rerun()
+        else:
+            st.info("Please select exactly 5 values to continue")

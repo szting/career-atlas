@@ -1,68 +1,59 @@
-from typing import List, Dict, Tuple
-from data.careers import career_paths
+from data.careers import careers_database
 
-def calculate_career_matches(user_profile: Dict) -> List[Dict]:
-    """Calculate career matches based on user profile"""
-    scored_careers = []
+def match_careers(riasec_scores, skills_confidence, work_values):
+    """
+    Match user profile with careers based on RIASEC scores, skills, and values
     
-    for career in career_paths:
+    Returns a list of careers sorted by match percentage
+    """
+    career_matches = []
+    
+    # Get top two RIASEC types
+    sorted_types = sorted(riasec_scores.items(), key=lambda x: x[1], reverse=True)
+    primary_type = sorted_types[0][0] if sorted_types else None
+    secondary_type = sorted_types[1][0] if len(sorted_types) > 1 else None
+    
+    for career in careers_database:
         match_score = 0
         
-        # RIASEC type matching (40% weight)
-        primary_score = user_profile['riasec_scores'].get(career['primary_type'], 0)
-        secondary_score = 0
-        if career.get('secondary_type'):
-            secondary_score = user_profile['riasec_scores'].get(career['secondary_type'], 0)
-        
-        riasec_score = (primary_score * 0.7 + secondary_score * 0.3)
-        match_score += riasec_score * 0.4
+        # RIASEC matching (40% weight)
+        if career['primary_type'] == primary_type:
+            match_score += 30
+        if career.get('secondary_type') == secondary_type:
+            match_score += 10
+        elif career['primary_type'] == secondary_type:
+            match_score += 20
         
         # Skills matching (35% weight)
-        user_skills = list(user_profile['skills_confidence'].keys())
-        matching_skills = []
-        for skill in career['required_skills']:
-            for user_skill in user_skills:
-                if skill.lower() in user_skill.lower() or user_skill.lower() in skill.lower():
-                    matching_skills.append(skill)
-                    break
+        if career.get('required_skills'):
+            matching_skills = 0
+            for skill in career['required_skills']:
+                if skill in skills_confidence and skills_confidence[skill] >= 60:
+                    matching_skills += 1
+            
+            if career['required_skills']:
+                skill_match_ratio = matching_skills / len(career['required_skills'])
+                match_score += skill_match_ratio * 35
         
-        skills_score = (len(matching_skills) / len(career['required_skills'])) * 100 if career['required_skills'] else 0
-        match_score += skills_score * 0.35
+        # Work values matching (25% weight)
+        if career.get('work_environment') and work_values:
+            value_matches = 0
+            for value in work_values:
+                # Simple keyword matching - in production, use more sophisticated matching
+                for env in career['work_environment']:
+                    if value.lower() in env.lower() or env.lower() in value.lower():
+                        value_matches += 1
+                        break
+            
+            value_match_ratio = value_matches / len(work_values) if work_values else 0
+            match_score += value_match_ratio * 25
         
-        # Work values alignment (25% weight)
-        value_keywords = {
-            'Work-Life Balance': ['flexible', 'balance', 'remote'],
-            'High Salary': ['salary', 'compensation', 'financial'],
-            'Job Security': ['stable', 'secure', 'established'],
-            'Creative Freedom': ['creative', 'artistic', 'innovative'],
-            'Helping Others': ['social', 'helping', 'service'],
-            'Recognition': ['leadership', 'management', 'achievement'],
-            'Autonomy': ['independent', 'self-directed', 'entrepreneurial'],
-            'Intellectual Challenge': ['analytical', 'problem solving', 'research'],
-            'Variety': ['diverse', 'varied', 'different'],
-            'Advancement Opportunities': ['growth', 'career progression', 'leadership']
-        }
-        
-        values_score = 0
-        career_text = f"{career['description']} {' '.join(career['work_environment'])}".lower()
-        
-        for value in user_profile['work_values']:
-            keywords = value_keywords.get(value, [])
-            if any(keyword in career_text for keyword in keywords):
-                values_score += 20
-        
-        values_score = min(values_score, 100)
-        match_score += values_score * 0.25
-        
-        career_with_score = career.copy()
-        career_with_score['match_score'] = round(match_score)
-        scored_careers.append(career_with_score)
+        career_matches.append({
+            **career,
+            'match_score': round(match_score)
+        })
     
     # Sort by match score
-    scored_careers.sort(key=lambda x: x['match_score'], reverse=True)
-    return scored_careers[:6]
-
-def get_top_riasec_types(riasec_scores: Dict) -> List[Tuple[str, float]]:
-    """Get top 3 RIASEC types"""
-    sorted_types = sorted(riasec_scores.items(), key=lambda x: x[1], reverse=True)
-    return sorted_types[:3]
+    career_matches.sort(key=lambda x: x['match_score'], reverse=True)
+    
+    return career_matches
